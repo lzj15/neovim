@@ -58,7 +58,9 @@ pub fn build(b: *std.Build) !void {
     const modern_unix = is_darwin or os_tag.isBSD() or is_linux;
     const is_wasm = t.cpu.arch == .wasm32;
 
+    const linkage = b.option(std.builtin.LinkMode, "linkage", "Linkage");
     const pie = b.option(bool, "pie", "Build position independent executable");
+
     const h = b.graph.host.result;
     const host = b.option([]const u8, "host", "target for host ") orelse
         if (target.query.isNative() or h.cpu.arch == t.cpu.arch and h.os.tag == t.os.tag) "" else "native";
@@ -491,7 +493,11 @@ pub fn build(b: *std.Build) !void {
         .linkage = .static,
         .name = "nvim",
         .root_module = nvim_mod,
-    }) else b.addExecutable(.{ .name = "nvim", .root_module = nvim_mod });
+    }) else b.addExecutable(.{
+        .name = "nvim",
+        .root_module = nvim_mod,
+        .linkage = linkage,
+    });
     nvim_exe.rdynamic = true; // -E
     nvim_exe.link_gc_sections = false; // prevent linker from gc:ing exported symbols #40622
     nvim_exe.pie = pie;
