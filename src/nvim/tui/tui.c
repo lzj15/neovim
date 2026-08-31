@@ -2377,7 +2377,8 @@ static void patch_terminfo_bugs(TUIData *tui, const char *term, const char *colo
   // DECSCUSR (cursor shape) is widely supported.
   // https://github.com/gnachman/iTerm2/pull/92
   if (!bsdvt
-      && (putty         // per MinTTY 0.4.3-1 release notes from 2009
+      && (xterm
+          || putty         // per MinTTY 0.4.3-1 release notes from 2009
           // per https://chromium.googlesource.com/apps/libapps/+/a5fb83c190aa9d74f4a9bca233dac6be2664e9e9/hterm/doc/ControlSequences.md
           || hterm
           // per https://bugzilla.gnome.org/show_bug.cgi?id=720821
