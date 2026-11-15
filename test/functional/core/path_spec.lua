@@ -16,47 +16,51 @@ local rmdir = n.rmdir
 local write_file = t.write_file
 local api = n.api
 
+local function join_path(...)
+  return table.concat({ ... }, '/')
+end
+
 describe('path', function()
   local targetdir
   local expected_path
 
   before_each(function()
-    targetdir = vim.fs.joinpath('test', 'functional', 'fixtures')
+    targetdir = join_path('test', 'functional', 'fixtures')
     clear()
-    command('edit ' .. vim.fs.joinpath(targetdir, 'tty-test.c'))
+    command('edit ' .. join_path(targetdir, 'tty-test.c'))
     expected_path = eval('expand("%:p")')
   end)
 
   it('with /./ segment #7117', function()
-    command('edit ' .. vim.fs.joinpath(targetdir, '.', 'tty-test.c'))
+    command('edit ' .. join_path(targetdir, '.', 'tty-test.c'))
     eq(expected_path, eval('expand("%:p")'))
   end)
 
   it('with ./ prefix #7117', function()
-    command('edit ' .. vim.fs.joinpath('.', targetdir, 'tty-test.c'))
+    command('edit ' .. join_path('.', targetdir, 'tty-test.c'))
     eq(expected_path, eval('expand("%:p")'))
   end)
 
   it('with ./ prefix, after directory change #7117', function()
-    command('edit ' .. vim.fs.joinpath('.', targetdir, 'tty-test.c'))
+    command('edit ' .. join_path('.', targetdir, 'tty-test.c'))
     command('cd test')
     eq(expected_path, eval('expand("%:p")'))
   end)
 
   it('with /../ segment #7117', function()
-    command('edit ' .. vim.fs.joinpath(targetdir, '..', 'fixtures', 'tty-test.c'))
+    command('edit ' .. join_path(targetdir, '..', 'fixtures', 'tty-test.c'))
     eq(expected_path, eval('expand("%:p")'))
   end)
 
   it('with ../ and different starting directory #7117', function()
     command('cd test')
-    command('edit ' .. vim.fs.joinpath('..', targetdir, 'tty-test.c'))
+    command('edit ' .. join_path('..', targetdir, 'tty-test.c'))
     eq(expected_path, eval('expand("%:p")'))
   end)
 
   it('with ./../ and different starting directory #7117', function()
     command('cd test')
-    command('edit ' .. vim.fs.joinpath('.', '..', targetdir, 'tty-test.c'))
+    command('edit ' .. join_path('.', '..', targetdir, 'tty-test.c'))
     eq(expected_path, eval('expand("%:p")'))
   end)
 
@@ -224,7 +228,7 @@ describe('file search', function()
   end)
 
   it('gf/<cfile> handles local file: paths', function()
-    local path = fn.fnamemodify(vim.fs.joinpath(testdir, 'gf-target.txt'), ':p'):gsub('\\', '/')
+    local path = fn.fnamemodify(join_path(testdir, 'gf-target.txt'), ':p'):gsub('\\', '/')
     local uri = 'file:' .. (is_os('win') and '/' or '') .. path
     write_file(path, '')
     insert(uri)
@@ -236,9 +240,9 @@ describe('file search', function()
 
   ---@param funcname 'finddir' | 'findfile'
   local function test_find_func(funcname, folder, item)
-    local d = vim.fs.joinpath(testdir, folder)
+    local d = join_path(testdir, folder)
     mkdir(d)
-    local expected = vim.fs.joinpath(d, item)
+    local expected = join_path(d, item)
     if funcname == 'finddir' then
       mkdir(expected)
     else

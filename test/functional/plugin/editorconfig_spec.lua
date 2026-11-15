@@ -6,6 +6,7 @@ local describe, it, before_each, setup, teardown =
 local clear = n.clear
 local command = n.command
 local eq = t.eq
+local pathsep = n.get_pathsep()
 local fn = n.fn
 local api = n.api
 local feed = n.feed
@@ -15,7 +16,7 @@ local testdir = 'Xtest-editorconfig'
 --- @param name string
 --- @param expected table<string,any>
 local function test_case(name, expected)
-  local filename = vim.fs.joinpath(testdir, name)
+  local filename = testdir .. pathsep .. name
   command('edit ' .. filename)
 
   for opt, val in pairs(expected) do
@@ -33,7 +34,7 @@ end
 setup(function()
   n.mkdir_p(testdir)
   t.write_file(
-    vim.fs.joinpath(testdir, '.editorconfig'),
+    testdir .. pathsep .. '.editorconfig',
     [[
     root = true
 
@@ -142,15 +143,15 @@ describe('editorconfig', function()
   end)
 
   it('stops at root even when a child sets root=false', function()
-    local root = vim.fs.joinpath(testdir, 'root')
-    local child = vim.fs.joinpath(root, 'child')
+    local root = testdir .. pathsep .. 'root'
+    local child = root .. pathsep .. 'child'
     n.mkdir_p(child)
-    t.write_file(vim.fs.joinpath(root, '.editorconfig'), 'root = true\n[*]\nindent_style = space\n')
-    t.write_file(vim.fs.joinpath(child, '.editorconfig'), 'root = false\n[*]\ntab_width = 5\n')
+    t.write_file(root .. pathsep .. '.editorconfig', 'root = true\n[*]\nindent_style = space\n')
+    t.write_file(child .. pathsep .. '.editorconfig', 'root = false\n[*]\ntab_width = 5\n')
 
     command('set shiftwidth=4')
     -- The outer .editorconfig sets indent_size=3 for this filename.
-    test_case(vim.fs.joinpath('root', 'child', '3_space.txt'), {
+    test_case('root' .. pathsep .. 'child' .. pathsep .. '3_space.txt', {
       expandtab = true,
       shiftwidth = 4,
       tabstop = 5,
@@ -159,14 +160,14 @@ describe('editorconfig', function()
   end)
 
   it('skips a section whose glob is an invalid regex', function()
-    local dir = vim.fs.joinpath(testdir, 'invalid_glob')
+    local dir = testdir .. pathsep .. 'invalid_glob'
     n.mkdir_p(dir)
     t.write_file(
-      vim.fs.joinpath(dir, '.editorconfig'),
+      dir .. pathsep .. '.editorconfig',
       'root = true\n[[z-a].txt]\nindent_style = tab\n[*.txt]\nmax_line_length = 42\n'
     )
 
-    test_case(vim.fs.joinpath('invalid_glob', 'foo.txt'), { textwidth = 42 })
+    test_case('invalid_glob' .. pathsep .. 'foo.txt', { textwidth = 42 })
     t.matches('Error occurred while parsing glob pattern', n.exec_capture('messages'))
   end)
 
@@ -233,11 +234,11 @@ describe('editorconfig', function()
 
   it('"?" glob does not match "/"', function()
     test_case('question_mark.txt', { textwidth = 42 })
-    test_case(vim.fs.joinpath('question', 'mark.txt'), { textwidth = 0 })
+    test_case('question' .. pathsep .. 'mark.txt', { textwidth = 0 })
   end)
 
   it('respects trim_trailing_whitespace', function()
-    local filename = vim.fs.joinpath(testdir, 'trim.txt')
+    local filename = testdir .. pathsep .. 'trim.txt'
     -- luacheck: push ignore 613
     local untrimmed = [[
 This line ends in whitespace 
@@ -254,14 +255,14 @@ But not this one
     command('bdelete')
     eq(trimmed, t.read_file(filename))
 
-    filename = vim.fs.joinpath(testdir, 'no_trim.txt')
+    filename = testdir .. pathsep .. 'no_trim.txt'
     t.write_file(filename, untrimmed)
     command('edit ' .. filename)
     command('write')
     command('bdelete')
     eq(untrimmed, t.read_file(filename))
 
-    filename = vim.fs.joinpath(testdir, 'skip_trim_when_insert.txt')
+    filename = testdir .. pathsep .. 'skip_trim_when_insert.txt'
     t.write_file(filename, untrimmed)
     command('edit ' .. filename)
     command('startinsert')
@@ -269,7 +270,7 @@ But not this one
     command('bdelete')
     eq(untrimmed, t.read_file(filename))
 
-    filename = vim.fs.joinpath(testdir, 'skip_trim_when_replace.txt')
+    filename = testdir .. pathsep .. 'skip_trim_when_replace.txt'
     t.write_file(filename, untrimmed)
     command('edit ' .. filename)
     command('startreplace')
@@ -277,7 +278,7 @@ But not this one
     command('bdelete')
     eq(untrimmed, t.read_file(filename))
 
-    filename = vim.fs.joinpath(testdir, 'skip_trim_when_insert_normal.txt')
+    filename = testdir .. pathsep .. 'skip_trim_when_insert_normal.txt'
     t.write_file(filename, untrimmed)
     command('edit ' .. filename)
     command('startinsert')
@@ -303,7 +304,7 @@ But not this one
 
   it('can be disabled per-buffer', function()
     api.nvim_set_option_value('shiftwidth', 42, {})
-    local bufnr = fn.bufadd(vim.fs.joinpath(testdir, '3_space.txt'))
+    local bufnr = fn.bufadd(testdir .. pathsep .. '3_space.txt')
     api.nvim_buf_set_var(bufnr, 'editorconfig', false)
     test_case('3_space.txt', { shiftwidth = 42 })
     test_case('4_space.py', { shiftwidth = 4 })
@@ -336,7 +337,7 @@ But not this one
       end
     end)
 
-    command('edit ' .. vim.fs.joinpath(testdir, 'custom_properties.txt'))
+    command('edit ' .. testdir .. pathsep .. 'custom_properties.txt')
     eq('something1', fn.luaeval('vim.b.property1'), 'property1')
     eq('x[something2]x', fn.luaeval('vim.b.property2'), 'property2')
   end)

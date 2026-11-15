@@ -43,6 +43,8 @@ describe('vim.lsp.util', function()
   end)
 
   describe('lsp.util.rename', function()
+    local pathsep = n.get_pathsep()
+
     it('can rename an existing file', function()
       local old = tmpname()
       write_file(old, 'Test content')
@@ -72,21 +74,21 @@ describe('vim.lsp.util', function()
       n.mkdir_p(old_dir)
 
       local file = 'file.txt'
-      write_file(vim.fs.joinpath(old_dir, file), 'Test content')
+      write_file(old_dir .. pathsep .. file, 'Test content')
 
       local lines = exec_lua(function()
-        local old_bufnr = vim.fn.bufadd(vim.fs.joinpath(old_dir, file))
+        local old_bufnr = vim.fn.bufadd(old_dir .. pathsep .. file)
         vim.fn.bufload(old_bufnr)
         vim.lsp.util.rename(old_dir, new_dir)
         -- the existing buffer is renamed in-place and its contents is kept
-        local new_bufnr = vim.fn.bufadd(vim.fs.joinpath(new_dir, file))
+        local new_bufnr = vim.fn.bufadd(new_dir .. pathsep .. file)
         vim.fn.bufload(new_bufnr)
         return (old_bufnr == new_bufnr) and vim.api.nvim_buf_get_lines(new_bufnr, 0, -1, true)
       end)
       eq({ 'Test content' }, lines)
       eq(false, vim.uv.fs_stat(old_dir) ~= nil)
       eq(true, vim.uv.fs_stat(new_dir) ~= nil)
-      eq(true, vim.uv.fs_stat(vim.fs.joinpath(new_dir, file)) ~= nil)
+      eq(true, vim.uv.fs_stat(new_dir .. pathsep .. file) ~= nil)
 
       os.remove(new_dir)
     end)

@@ -4,6 +4,7 @@ endif()
 
 set(CPACK_PACKAGE_NAME "Neovim")
 set(CPACK_PACKAGE_VENDOR "neovim.io")
+set(CPACK_PACKAGE_FILE_NAME "nvim")
 set(CPACK_PACKAGE_DIRECTORY ${PROJECT_BINARY_DIR})
 
 # From the GitHub About section
@@ -75,7 +76,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     "${CMAKE_CURRENT_LIST_DIR}/postinst"
     "${CMAKE_CURRENT_LIST_DIR}/prerm")
 else()
-  set(CPACK_PACKAGE_FILE_NAME "nvim")
   set(CPACK_GENERATOR TGZ)
 endif()
 

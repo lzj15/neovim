@@ -220,16 +220,11 @@ function M.override_screen_expect_for_conpty(screen)
   if not t.is_os('win') then
     return
   end
-  local function relax_prompt_attrs(grid)
-    grid = grid:gsub(' *%} +%|\n', '{MATCH: *}}{MATCH: *}|\n')
-    return (grid:gsub('%}%^ +%|\n', '{MATCH:[ ^]*}}{MATCH:[ ^]*}|\n'))
-  end
   local orig_screen_expect = screen.expect
   function screen.expect(self, expected, attr_ids, ...)
     if type(expected) == 'string' then
-      expected = relax_prompt_attrs(expected)
-    elseif type(expected) == 'table' and type(expected.grid) == 'string' then
-      expected.grid = relax_prompt_attrs(expected.grid)
+      expected = expected:gsub(' *%} +%|\n', '{MATCH: *}}{MATCH: *}|\n')
+      expected = expected:gsub('%}%^ +%|\n', '{MATCH:[ ^]*}}{MATCH:[ ^]*}|\n')
     end
     orig_screen_expect(self, expected, attr_ids, ...)
   end

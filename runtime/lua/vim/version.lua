@@ -186,17 +186,7 @@ function M._version(version, strict) -- Adapted from https://github.com/folke/la
     version = scrubbed
   end
 
-  local build = version:match('%+(.*)$')
-  version = version:gsub('%+.*$', '')
-  if strict and build then
-    for part in (build .. '.'):gmatch('(.-)%.') do
-      if not part:match('^[0-9A-Za-z-]+$') then
-        return nil -- Invalid build metadata.
-      end
-    end
-  end
-
-  local prerel = version:match('%-(.*)$')
+  local prerel = version:match('%-([^+]*)')
   local prerel_strict = version:match('%-([0-9A-Za-z-]*)')
   if
     strict
@@ -205,6 +195,7 @@ function M._version(version, strict) -- Adapted from https://github.com/folke/la
   then
     return nil -- Invalid prerelease.
   end
+  local build = prerel and version:match('%-[^+]*%+(.*)$') or version:match('%+(.*)$')
   local major, minor, patch =
     version:match('^v?(%d+)%.?(%d*)%.?(%d*)' .. (strict and (prerel and '%-' or '$') or ''))
 
@@ -301,7 +292,7 @@ local range_mt = {
 --- @param spec string Version range "spec"
 --- @return vim.VersionRange?
 function M.range(spec) -- Adapted from https://github.com/folke/lazy.nvim
-  if spec == '*' or spec == 'x' or spec == '' then
+  if spec == '*' or spec == '' then
     return setmetatable({ from = M.parse('0.0.0') }, range_mt)
   end
 
@@ -312,19 +303,14 @@ function M.range(spec) -- Adapted from https://github.com/folke/lazy.nvim
     local parts = vim.split(b, '.', { plain = true })
     local ra = M.range(a)
     local rb = M.range(b)
-    if not ra or not rb then
-      return nil
-    end
     return setmetatable({
-      from = ra.from,
-      to = #parts == 3 and rb.from or rb.to,
+      from = ra and ra.from,
+      to = rb and (#parts == 3 and rb.from or rb.to),
     }, range_mt)
   end
-  local mods, version = spec:match('^([%^=<>~]*)(.*)$')
+  local mods, version = spec:lower():match('^([%^=<>~]*)(.*)$')
   assert(mods and version) -- The pattern matches every string.
-  version = version:gsub('^[^+-]+', function(core)
-    return (core:gsub('%.[%*xX]', ''))
-  end)
+  version = version:gsub('%.[%*x]', '')
   local parts = vim.split(version:gsub('%-.*', ''), '.', { plain = true })
   if #parts < 3 and mods == '' then
     mods = '~'
@@ -370,7 +356,7 @@ function M.range(spec) -- Adapted from https://github.com/folke/lazy.nvim
       end
     elseif mods == '^' then
       for i = 1, 3 do
-        if to[i] ~= 0 or (i == #parts and i < 3) then
+        if to[i] ~= 0 then
           to[i] = to[i] + 1
           for j = i + 1, 3 do
             to[j] = 0
